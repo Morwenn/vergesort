@@ -1,5 +1,5 @@
-pdqsort
--------
+vergesort
+---------
 
 Vergesort is a new sorting algorithm which combines merge oprations on almost sorted data, and
 falls back to a [pattern-defeating quicksort](https://github.com/orlp/pdqsort) when the data is
