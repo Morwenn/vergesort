@@ -91,17 +91,31 @@ inline std::vector<int> push_middle_int(size_t size, std::mt19937_64&) {
     return v;
 }
 
-inline std::vector<int> ascending_modulo_int(size_t size, std::mt19937_64&) {
+inline std::vector<int> ascending_sawtooth_int(size_t size, std::mt19937_64&) {
     std::vector<int> v; v.reserve(size);
-    int limit = size / log2(size) * 0.9;
+    int limit = size / log2(size) * 1.1;
     for (int i = 0; i < size; ++i) v.push_back(i % limit);
     return v;
 }
 
-inline std::vector<int> descending_modulo_int(size_t size, std::mt19937_64&) {
+inline std::vector<int> descending_sawtooth_int(size_t size, std::mt19937_64&) {
     std::vector<int> v; v.reserve(size);
-    int limit = size / log2(size) * 0.9;
+    int limit = size / log2(size) * 1.1;
     for (int i = size - 1; i >= 0; --i) v.push_back(i % limit);
+    return v;
+}
+
+inline std::vector<int> alternating_int(size_t size, std::mt19937_64&) {
+    std::vector<int> v; v.reserve(size);
+    for (int i = 0; i < size; ++i) v.push_back(i);
+    for (int i = 0; i < size; i += 2) v[i] *= -1;
+    return v;
+}
+
+inline std::vector<int> alternating_16_values_int(size_t size, std::mt19937_64&) {
+    std::vector<int> v; v.reserve(size);
+    for (int i = 0; i < size; ++i) v.push_back(i % 16);
+    for (int i = 0; i < size; i += 2) v[i] *= -1;
     return v;
 }
 
@@ -130,8 +144,10 @@ int main() {
         {"pipe_organ_int", pipe_organ_int},
         {"push_front_int", push_front_int},
         {"push_middle_int", push_middle_int},
-        {"ascending_modulo_int", ascending_modulo_int},
-        {"descending_modulo_int", descending_modulo_int}
+        {"ascending_sawtooth_int", ascending_sawtooth_int},
+        {"descending_sawtooth_int", descending_sawtooth_int},
+        {"alternating_int", alternating_int},
+        {"alternating_16_values_int", alternating_16_values_int}
     };
 
     std::pair<std::string, SortF> sorts[] = {

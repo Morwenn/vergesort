@@ -15,8 +15,10 @@ distribution_names = {
     "pipe_organ_int": "Pipe organ",
     "push_front_int": "Push front",
     "push_middle_int": "Push middle",
-    "ascending_modulo_int": "Ascending modulo",
-    "descending_modulo_int": "Descending modulo"
+    "ascending_sawtooth_int": "Ascending sawtooth",
+    "descending_sawtooth_int": "Descending sawtooth",
+    "alternating_int": "Alternating",
+    "alternating_16_values_int": "Alternating (16 values)"
 }
 
 for filename in os.listdir("profiles"):
@@ -40,8 +42,10 @@ for filename in os.listdir("profiles"):
         "Pipe organ",
         "Push front",
         "Push middle",
-        "Ascending modulo",
-        "Descending modulo"
+        "Ascending sawtooth",
+        "Descending sawtooth",
+        "Alternating",
+        "Alternating (16 values)"
     )
 
     algos = ("heapsort", "introsort", "pdqsort", "vergesort", "timsort")
