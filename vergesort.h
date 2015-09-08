@@ -185,7 +185,7 @@ template<typename RandomAccessIterator>
 inline void vergesort(RandomAccessIterator first, RandomAccessIterator last)
 {
     typedef typename std::iterator_traits<RandomAccessIterator>::value_type value_type;
-    pdqsort(first, last, std::less<value_type>());
+    vergesort(first, last, std::less<value_type>());
 }
 
 #endif // VERGESORT_H_
