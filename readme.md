@@ -19,13 +19,13 @@ fall under the zlib license), you are free to use the code as you wish.
 A comparison of introsort (gcc `std::sort` at time of writing), heapsort (gcc `std::sort_heap`),
 pdqsort, vergesort and timsort with various input distributions:
 
-![Performance graph](http://i.imgur.com/RdWf27n.png)
+![Performance graph](http://i.imgur.com/sDzdCAX.png)
 
 Compiled with MinGW g++ 5.1 `-std=c++14 -O2 -march=native`.
 
 Note that the latest two benchmarks are a bit biased: they highlight the few cases where vergesort
 clearly beats both TimSort and pdqsort. These cases correspond to series of ascending (first one)
-and descending (second one) patterns whose size is a bit bigger than n / log2 n where n is the
+and descending (second one) patterns whose size is a bit bigger than n / log n where n is the
 size of the collection to sort.
 
 ### The algorithm
@@ -43,7 +43,7 @@ the remembered iterator and the beginning of the *big enough* sorted sub-collect
 everything (it's a bit hard to explain, I hope that reading both this explanation and the algorithm
 will make things clearer).
 
-A sub-collection is considered *big enough* when its size is bigger than n / log2 n where n is the
+A sub-collection is considered *big enough* when its size is bigger than n / log n where n is the
 size of the entire collection to sort. This heuristic is sometimes suboptimal since tests have proven
 that it would be better not to fall back to the pattern-defeating quicksort in some cases, but I
 couldn't find a better general-purpose heuristic, so this one will do for the time being.
@@ -61,19 +61,24 @@ sorted then the three sorted collections are merged in-place. To avoid making un
 the algorithm will check which collection between the first and the third is the smallest and merge
 this one first to the second sub-collection. Then it will merge the resulting sub-collection to the
 remaining one.
+* Instead of simply going through the collection element by element, vergesort jumps n / log n
+elements and expands iterators to the left and to the right to check whether it is in a sorted or
+reverse-sorted sub-collection. In some cases (for example shuffled data), it allows to detect that
+we are not in a *big enough* collection without having to check every element and to fall back to
+the pattern-defeating quicksort with barely more than log n comparisons.
 
 ### Potential optimizations
 
 The algorithm is actualy suboptimal in many aspects and could still be improved with a bit of work.
 Here is what could be done to further improve  it:
 
-* The heuristic n / log2 n seems to be a bit off in some cases. It should be possible to find a more
+* The heuristic n / log n seems to be a bit off in some cases. It may be possible to find a more
 appropriate one.
 * It is probably possible to merge three sub-collections in-place at a lower cost than merging two
 of them then merging the result to the remaining one.
 * When a reverse-sorted sub-collection is found, instead of reversing it then merging it, it is
 probably possible to write an algorithm that will reverse-merge the second sub-collection into the
-first so that the reversing operation becomes free.
+first so that the reversing operation becomes virtually free.
 
 While these modifications should at least slightly improve the merging efficiency, I don't know
 whether it will be noticeable and the standard library merge algorithms are fine pieces of work,
