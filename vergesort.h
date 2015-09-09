@@ -106,12 +106,12 @@ inline void vergesort(RandomAccessIterator first, RandomAccessIterator last, Com
         // Beginning of the current range
         RandomAccessIterator begin_range = current;
 
-        // Set forward iterators
+        // Set backward iterators
         difference_type limit = std::min(std::distance(next, last), unstable_limit);
         std::advance(current, limit);
         std::advance(next, limit);
 
-        // Set backward iterators
+        // Set forward iterators
         RandomAccessIterator current2 = current;
         RandomAccessIterator next2 = next;
 
