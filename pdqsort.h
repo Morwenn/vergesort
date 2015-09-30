@@ -59,9 +59,10 @@ namespace pdqsort_detail {
         typedef typename std::iterator_traits<Iter>::value_type T;
         if (begin == end) return;
 
-        for (Iter cur = begin + 1; cur != end; ++cur) {
+        Iter cur = begin; ++cur;
+        for (; cur != end; ++cur) {
             Iter sift = cur;
-            Iter sift_1 = cur - 1;
+            Iter sift_1 = cur; --sift_1;
 
             // Compare first so we can avoid 2 moves for an element already positioned correctly.
             if (comp(*sift, *sift_1)) {

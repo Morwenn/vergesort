@@ -11,22 +11,42 @@ quicksort for shuffled data, which is its worst case, so...
     Best        Average     Worst       Memory      Stable
     n           n log n     n log n     n           No
 
+While vergesort has been designed to work with random-access iterators, we also provide a version
+which works with bidirectional iterators. The algorithm is slightly different and a bit slower.
+Also, it falls back on a regular median-of-3 quicksort instead of a pattern-defeating quicksort
+since the latter only works with random-access iterators. The complexity for the bidirectional
+iterators version is as follows:
+
+    Best        Average     Worst       Memory      Stable
+    n           n log n     n²          n           No
+
+It should be noted that the worst case should run in O(n²) since the vergesort falls back to a
+median-of-3 quicksort. That said, the quicksort tends to have a worst case complexity wor some
+specific patterns, and the vergesort layer might be efficient against these patterns. At the
+timme of writing, there is no know pattern to trigger the quadratic behavior, but unless proven
+otherwise, such a quadratic behavior might exist for this bidirectional version.
+
 The code being released under the MIT license (except the many bits taken from pdqsort, which
 fall under the zlib license), you are free to use the code as you wish.
 
-### Benchmark
+### Benchmarks
 
 A comparison of introsort (gcc `std::sort` at time of writing), heapsort (gcc `std::sort_heap`),
-pdqsort, vergesort and timsort with various input distributions:
+pdqsort, vergesort and timsort with various input distributions for random-access iterators:
 
-![Performance graph](http://i.imgur.com/sDzdCAX.png)
-
-Compiled with MinGW g++ 5.1 `-std=c++14 -O2 -march=native`.
+![Random-access sorts](http://i.imgur.com/sDzdCAX.png)
 
 Note that the latest two benchmarks are a bit biased: they highlight the few cases where vergesort
 clearly beats both TimSort and pdqsort. These cases correspond to series of ascending (first one)
 and descending (second one) patterns whose size is a bit bigger than n / log n where n is the
 size of the collection to sort.
+
+The following benchmark compares a list-specific mergesort (`std::list::sort`), a regular mergesort,
+a median-of-3 quicksort and vergesort with various input distributions for bidirectional iterators:
+
+![Bidirectional sorts](https://i.imgur.com/J3XYJtw.png)
+
+These benchmarks have been compiled with MinGW g++ 5.1 `-std=c++14 -O2 -march=native`.
 
 ### The algorithm
 
@@ -38,7 +58,7 @@ it first if the sub-collection is sorted in descending order).
 
 If the sorted sub-collection is not big enough, vergesort just remembers its beginning and moves
 on to the next sorted sub-collection. When it reaches a *big enough* sub-collection that is already
-sorted or reverse-sorted, it calls the pattern-defeating quicksort to sort everything that is between
+sorted or reverse-sorted, it calls the pdqsort or  thequicksort to sort everything that is between
 the remembered iterator and the beginning of the *big enough* sorted sub-collection and then merges
 everything (it's a bit hard to explain, I hope that reading both this explanation and the algorithm
 will make things clearer).
@@ -55,7 +75,7 @@ for collections with patterns at the cost of worse performance for shuffled valu
 also implements a couple of additional optimizations:
 
 * If the collection is too small, vergesort does not perform great, so with simply switch to pdqsort
-in this case.
+or quicksort in this case.
 * When a *big enough* sub-collection is found, the unstable sub-collection that precedes it is
 sorted then the three sorted collections are merged in-place. To avoid making unnecessary comparisons,
 the algorithm will check which collection between the first and the third is the smallest and merge
@@ -65,7 +85,8 @@ remaining one.
 elements and expands iterators to the left and to the right to check whether it is in a sorted or
 reverse-sorted sub-collection. In some cases (for example shuffled data), it allows to detect that
 we are not in a *big enough* collection without having to check every element and to fall back to
-the pattern-defeating quicksort with barely more than log n comparisons.
+the pattern-defeating quicksort with barely more than log n comparisons. This optimization requires
+jumps through the table and does not exist for the bidirectional version.
 
 ### Potential optimizations
 
