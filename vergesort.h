@@ -290,18 +290,26 @@ namespace vergesort_detail
         RandomAccessIterator begin_unstable = last;
 
         // Pair of iterators to iterate through the collection
-        RandomAccessIterator current = vergesort_detail::is_sorted_until(first, last, compare) - 1;
-        RandomAccessIterator next = current + 1;
+        RandomAccessIterator next = vergesort_detail::is_sorted_until(first, last, compare);
+        RandomAccessIterator current = next - 1;
 
         while (true)
         {
             // Beginning of the current range
             RandomAccessIterator begin_range = current;
 
+            if (std::distance(next, last) <= unstable_limit)
+            {
+                if (begin_unstable == last)
+                {
+                    begin_unstable = begin_range;
+                }
+                break;
+            }
+
             // Set backward iterators
-            difference_type limit = std::min(std::distance(next, last), unstable_limit);
-            std::advance(current, limit);
-            std::advance(next, limit);
+            std::advance(current, unstable_limit);
+            std::advance(next, unstable_limit);
 
             // Set forward iterators
             RandomAccessIterator current2 = current;
