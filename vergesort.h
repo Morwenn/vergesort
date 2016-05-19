@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Morwenn <morwenn29@hotmail.fr>
+ * Copyright (c) 2015-2016 Morwenn <morwenn29@hotmail.fr>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -291,6 +291,7 @@ namespace vergesort_detail
 
         // Pair of iterators to iterate through the collection
         RandomAccessIterator next = vergesort_detail::is_sorted_until(first, last, compare);
+        if (next == last) return;
         RandomAccessIterator current = next - 1;
 
         while (true)
