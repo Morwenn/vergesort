@@ -2,7 +2,7 @@
     pdqsort.h - Pattern-defeating quicksort.
 
     Copyright (c) 2015 Orson Peters
-    Modified by Morwenn in 2015 to use in vergesort
+    Modified by Morwenn in 2015-2016 to use in vergesort
 
     This software is provided 'as-is', without any express or implied warranty. In no event will the
     authors be held liable for any damages arising from the use of this software.
@@ -269,7 +269,7 @@ namespace pdqsort_detail {
             sort3(begin + size / 2, begin, end - 1, comp);
 
             // If *(begin - 1) is the end of the right partition of a previous partition operation
-            // there is no element in [*begin, end) that is smaller than *(begin - 1). Then if our
+            // there is no element in [begin, end) that is smaller than *(begin - 1). Then if our
             // pivot compares equal to *(begin - 1) we change strategy, putting equal elements in
             // the left partition, greater elements in the right partition. We do not have to
             // recurse on the left partition, since it's sorted (all equal).
@@ -284,8 +284,9 @@ namespace pdqsort_detail {
             bool already_partitioned = part_result.second;
 
             // Check for a highly unbalanced partition.
-            diff_t pivot_offset = pivot_pos - begin;
-            bool highly_unbalanced = pivot_offset < size / 8 || pivot_offset > (size - size / 8);
+            diff_t l_size = pivot_pos - begin;
+            diff_t r_size = end - (pivot_pos + 1);
+            bool highly_unbalanced = l_size < size / 8 || r_size < size / 8;
 
             // If we got a highly unbalanced partition we shuffle elements to break many patterns.
             if (highly_unbalanced) {
@@ -296,16 +297,14 @@ namespace pdqsort_detail {
                     return;
                 }
 
-                diff_t partition_size = pivot_pos - begin;
-                if (partition_size >= insertion_sort_threshold) {
-                    std::iter_swap(begin, begin + partition_size / 4);
-                    std::iter_swap(pivot_pos - 1, pivot_pos - partition_size / 4);
+                if (l_size >= insertion_sort_threshold) {
+                    std::iter_swap(begin,             begin + l_size / 4);
+                    std::iter_swap(pivot_pos - 1, pivot_pos - l_size / 4);
                 }
 
-                partition_size = end - pivot_pos;
-                if (partition_size >= insertion_sort_threshold) {
-                    std::iter_swap(pivot_pos + 1, pivot_pos + partition_size / 4);
-                    std::iter_swap(end - 1, end - partition_size / 4);
+                if (r_size >= insertion_sort_threshold) {
+                    std::iter_swap(pivot_pos + 1, pivot_pos + 1 + r_size / 4);
+                    std::iter_swap(end - 1,                 end - r_size / 4);
                 }
             } else {
                 // If we were decently balanced and we tried to sort an already partitioned
