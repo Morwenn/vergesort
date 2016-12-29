@@ -1,24 +1,25 @@
-#include <random>
-#include <cassert>
-#include <ctime>
-#include <vector>
-#include <iostream>
-#include <chrono>
-#include <utility>
+#include <algorithm>
 #include <array>
-#include <type_traits>
+#include <cassert>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <ctime>
 #include <functional>
+#include <iostream>
+#include <random>
 #include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
-#include "../pdqsort.h"
 #include "../vergesort.h"
-#include "timsort.h"
 
 #ifdef _WIN32
     #include <intrin.h>
     #define rdtsc __rdtsc
 #else
-    #ifdef __i386__
+    #ifdef __i586__
         static __inline__ unsigned long long rdtsc() {
             unsigned long long int x;
             __asm__ volatile(".byte 0x0f, 0x31" : "=A" (x));
@@ -36,53 +37,53 @@
 #endif
 
 
-inline std::vector<int> shuffled_int(size_t size, std::mt19937_64& rng) {
+inline std::vector<int> shuffled_int(std::size_t size, std::mt19937_64& rng) {
     std::vector<int> v; v.reserve(size);
     for (int i = 0; i < size; ++i) v.push_back(i);
     std::shuffle(v.begin(), v.end(), rng);
     return v;
 }
 
-inline std::vector<int> shuffled_16_values_int(size_t size, std::mt19937_64& rng) {
+inline std::vector<int> shuffled_16_values_int(std::size_t size, std::mt19937_64& rng) {
     std::vector<int> v; v.reserve(size);
     for (int i = 0; i < size; ++i) v.push_back(i % 16);
     std::shuffle(v.begin(), v.end(), rng);
     return v;
 }
 
-inline std::vector<int> all_equal_int(size_t size, std::mt19937_64&) {
+inline std::vector<int> all_equal_int(std::size_t size, std::mt19937_64&) {
     std::vector<int> v; v.reserve(size);
     for (int i = 0; i < size; ++i) v.push_back(0);
     return v;
 }
 
-inline std::vector<int> ascending_int(size_t size, std::mt19937_64&) {
+inline std::vector<int> ascending_int(std::size_t size, std::mt19937_64&) {
     std::vector<int> v; v.reserve(size);
     for (int i = 0; i < size; ++i) v.push_back(i);
     return v;
 }
 
-inline std::vector<int> descending_int(size_t size, std::mt19937_64&) {
+inline std::vector<int> descending_int(std::size_t size, std::mt19937_64&) {
     std::vector<int> v; v.reserve(size);
     for (int i = size - 1; i >= 0; --i) v.push_back(i);
     return v;
 }
 
-inline std::vector<int> pipe_organ_int(size_t size, std::mt19937_64&) {
+inline std::vector<int> pipe_organ_int(std::size_t size, std::mt19937_64&) {
     std::vector<int> v; v.reserve(size);
     for (int i = 0; i < size/2; ++i) v.push_back(i);
     for (int i = size/2; i < size; ++i) v.push_back(size - i);
     return v;
 }
 
-inline std::vector<int> push_front_int(size_t size, std::mt19937_64&) {
+inline std::vector<int> push_front_int(std::size_t size, std::mt19937_64&) {
     std::vector<int> v; v.reserve(size);
     for (int i = 1; i < size; ++i) v.push_back(i);
     v.push_back(0);
     return v;
 }
 
-inline std::vector<int> push_middle_int(size_t size, std::mt19937_64&) {
+inline std::vector<int> push_middle_int(std::size_t size, std::mt19937_64&) {
     std::vector<int> v; v.reserve(size);
     for (int i = 0; i < size; ++i) {
         if (i != size/2) v.push_back(i);
@@ -91,28 +92,28 @@ inline std::vector<int> push_middle_int(size_t size, std::mt19937_64&) {
     return v;
 }
 
-inline std::vector<int> ascending_sawtooth_int(size_t size, std::mt19937_64&) {
+inline std::vector<int> ascending_sawtooth_int(std::size_t size, std::mt19937_64&) {
     std::vector<int> v; v.reserve(size);
-    int limit = size / log2(size) * 1.1;
+    int limit = size / vergesort::detail::log2(size) * 1.1;
     for (int i = 0; i < size; ++i) v.push_back(i % limit);
     return v;
 }
 
-inline std::vector<int> descending_sawtooth_int(size_t size, std::mt19937_64&) {
+inline std::vector<int> descending_sawtooth_int(std::size_t size, std::mt19937_64&) {
     std::vector<int> v; v.reserve(size);
-    int limit = size / log2(size) * 1.1;
+    int limit = size / vergesort::detail::log2(size) * 1.1;
     for (int i = size - 1; i >= 0; --i) v.push_back(i % limit);
     return v;
 }
 
-inline std::vector<int> alternating_int(size_t size, std::mt19937_64&) {
+inline std::vector<int> alternating_int(std::size_t size, std::mt19937_64&) {
     std::vector<int> v; v.reserve(size);
     for (int i = 0; i < size; ++i) v.push_back(i);
     for (int i = 0; i < size; i += 2) v[i] *= -1;
     return v;
 }
 
-inline std::vector<int> alternating_16_values_int(size_t size, std::mt19937_64&) {
+inline std::vector<int> alternating_16_values_int(std::size_t size, std::mt19937_64&) {
     std::vector<int> v; v.reserve(size);
     for (int i = 0; i < size; ++i) v.push_back(i % 16);
     for (int i = 0; i < size; i += 2) v[i] *= -1;
@@ -128,11 +129,12 @@ void heapsort(Iter begin, Iter end, Compare comp) {
 
 
 
-int main() {
+int main()
+{
     auto seed = std::time(0);
     std::mt19937_64 el;
 
-    typedef std::vector<int> (*DistrF)(size_t, std::mt19937_64&);
+    typedef std::vector<int> (*DistrF)(std::size_t, std::mt19937_64&);
     typedef void (*SortF)(std::vector<int>::iterator, std::vector<int>::iterator, std::less<int>);
 
     std::pair<std::string, DistrF> distributions[] = {
@@ -152,10 +154,10 @@ int main() {
 
     std::pair<std::string, SortF> sorts[] = {
         {"heapsort", &heapsort<std::vector<int>::iterator, std::less<int>>},
-        {"introsort", &std::sort<std::vector<int>::iterator, std::less<int>>},
-        {"pdqsort", &pdqsort<std::vector<int>::iterator, std::less<int>>},
-        {"vergesort", &vergesort<std::vector<int>::iterator, std::less<int>>},
-        {"timsort", &gfx::timsort<std::vector<int>::iterator, std::less<int>>}
+        {"std::sort", &std::sort<std::vector<int>::iterator, std::less<int>>},
+        {"std::stable_sort", &std::stable_sort<std::vector<int>::iterator, std::less<int>>},
+        {"pdqsort", &vergesort::detail::pdqsort<std::vector<int>::iterator, std::less<int>>},
+        {"vergesort", &vergesort::vergesort<std::vector<int>::iterator, std::less<int>>},
     };
 
     int sizes[] = {1000000};
@@ -166,25 +168,28 @@ int main() {
 
             for (auto size : sizes) {
                 std::chrono::time_point<std::chrono::high_resolution_clock> total_start, total_end;
-                std::vector<uint64_t> cycles;
+                std::vector<std::uint64_t> cycles;
 
                 total_start = std::chrono::high_resolution_clock::now();
                 total_end = std::chrono::high_resolution_clock::now();
-                while (std::chrono::duration_cast<std::chrono::milliseconds>(total_end - total_start).count() < 10000) {
+                while (std::chrono::duration_cast<std::chrono::milliseconds>(total_end - total_start).count() < 5000) {
                     std::vector<int> v = distribution.second(size, el);
-                    uint64_t start = rdtsc();
+                    std::uint64_t start = rdtsc();
                     sort.second(v.begin(), v.end(), std::less<int>());
-                    uint64_t end = rdtsc();
+                    assert(std::is_sorted(v.begin(), v.end()));
+                    std::uint64_t end = rdtsc();
                     cycles.push_back(double(end - start) / size + 0.5);
                     total_end = std::chrono::high_resolution_clock::now();
                 }
 
                 std::sort(cycles.begin(), cycles.end());
 
-                std::cerr << size << " " << distribution.first << " " << sort.first << "\n";
-                std::cout << size << " " << distribution.first << " " << sort.first << " ";
-                for (uint64_t cycle : cycles) std::cout << cycle << " ";
-                std::cout << "\n";
+                std::cerr << size << ' ' << distribution.first << ' ' << sort.first << '\n';
+                std::cout << size << ' ' << distribution.first << ' ' << sort.first << ' ';
+                for (std::uint64_t cycle : cycles) {
+                    std::cout << cycle << ' ';
+                }
+                std::cout << '\n';
             }
         }
     }
