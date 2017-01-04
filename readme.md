@@ -47,6 +47,25 @@ regular mergesort, and vergesort with various input distributions for bidirectio
 
 These benchmarks have been compiled with MinGW g++ 6.1.0 `-std=c++1z -O2 -march=native`.
 
+### Structure of the project
+
+The project exposes one function: `vergesort::vergesort`, which takes either two iterators, or two
+iterators and a comparison function, just like `std::sort`.
+
+```cpp
+template<typename BidirectionalIterator>
+void vergesort(BidirectionalIterator first, BidirectionalIterator last);
+
+template<typename BidirectionalIterator, typename Compare>
+void vergesort(BidirectionalIterator first, BidirectionalIterator last,
+               Compare compare);
+```
+
+The algorithm is split into several components into the `include/vergesort` directory, which makes
+it easier to analyze and maintain the algorithm. For those who only wish to use it, it the file
+`vergesort.h` at the root of the directory is a self-contained version of the algorithm, in a
+single header file, that you can just take, put wherever you want to, and use as is.
+
 ### The algorithm
 
 *In the following sequence, we will call "run" a sorted (in ascending or descending order)
