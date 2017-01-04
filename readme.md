@@ -4,12 +4,12 @@ vergesort
 Vergesort is a new sorting algorithm which combines merge operations on almost sorted data, and
 falls back to another sorting algorithm ([pattern-defeating quicksort][1] here, but it could be
 anything) when the data is not sorted enough. It achieves linear time on some patterns, generally
-for almost sorted data, and should never perform worse than O(n log n). This last statement has
+for almost sorted data, and should never perform worse than O(n log² n). This last statement has
 not been formally proven, but there is an intuitive logic explained in the description of the
 algorithm which makes this complexity seem honest.
 
     Best        Average     Worst       Memory      Stable
-    n           n log n     n log n     n           No
+    n           n log n     n log² n    n           No
 
 While vergesort has been designed to work with random-access iterators, this repository also
 contains an experimental version which works with bidirectional iterators. The algorithm is
@@ -24,7 +24,7 @@ follows:
 It should be noted that the worst case should run in O(n²) since vergesort falls back to a
 median-of-9 quicksort. That said, the quicksort tends to have a worst case complexity for some
 specific patterns, and the vergesort layer might be efficient against these patterns. That said,
-the time complexity could be lowered to O(n log n) by replacing the quicksort by a mergesort.
+the time complexity could be lowered to O(n log² n) by replacing the quicksort by a mergesort.
 Quicksort was chosen for consistency because it's in the family of pattern-defeating quicksort.
 
 ### Benchmarks
@@ -65,6 +65,10 @@ The algorithm is split into several components into the `include/vergesort` dire
 it easier to analyze and maintain the algorithm. For those who only wish to use it, it the file
 `vergesort.h` at the root of the directory is a self-contained version of the algorithm, in a
 single header file, that you can just take, put wherever you want to, and use as is.
+
+Everything should work with even C++03. If you want a more modern version of vergesort, with full
+projections and proxy iterators support, there is one living in my [cpp-sort][3] project, along
+with several other interesting sorting algorithms.
 
 ### The algorithm
 
@@ -141,3 +145,4 @@ O(n/2 + log n) = O(n) extra memory in the worst case.
 
   [1]: https://github.com/orlp/pdqsort
   [2]: http://cs.stackexchange.com/q/68271/29312
+  [3]: https://github.com/Morwenn/cpp-sort
