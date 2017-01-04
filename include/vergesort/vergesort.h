@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2016 Morwenn <morwenn29@hotmail.fr>
+ * Copyright (c) 2015-2017 Morwenn <morwenn29@hotmail.fr>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@
 
 // Used by several other internal headers, hence defined first
 #if __cplusplus >= 201103L
+    #include <utility>
     #define VERGESORT_PREFER_MOVE(x) std::move(x)
 #else
     #define VERGESORT_PREFER_MOVE(x) (x)
@@ -37,6 +38,7 @@
 #include <cstddef>
 #include <functional>
 #include <iterator>
+#include <list>
 #include "detail/is_sorted_until.h"
 #include "detail/log2.h"
 #include "detail/pdqsort.h"
@@ -165,7 +167,6 @@ namespace vergesort
             }
         }
 
-        // vergesort for random-access iterators
         template<typename RandomAccessIterator, typename Compare>
         void vergesort(RandomAccessIterator first, RandomAccessIterator last,
                        Compare compare, std::random_access_iterator_tag)
@@ -174,27 +175,33 @@ namespace vergesort
             difference_type dist = std::distance(first, last);
 
             if (dist < 80) {
-                // vergesort is inefficient for small collections
+                // Vergesort is inefficient for small collections
                 pdqsort(first, last, compare);
                 return;
             }
 
-            // Limit under which pdqsort is used
-            difference_type unstable_limit = dist / log2(dist);
+            // Limit under which pdqsort is used to sort a sub-sequence
+            const difference_type unstable_limit = dist / detail::log2(dist);
 
-            // Beginning of an unstable partition, last if the
-            // previous partition is stable
+            // Vergesort detects big runs in ascending or descending order,
+            // and remember where each run ends by storing the end iterator
+            // of each run in this list, then it merges everything in the end
+            std::list<RandomAccessIterator> runs;
+
+            // Beginning of an unstable partition, or last if the previous
+            // partition is stable
             RandomAccessIterator begin_unstable = last;
 
             // Pair of iterators to iterate through the collection
-            RandomAccessIterator next = detail::is_sorted_until(first, last, compare);
-            if (next == last) return;
-            RandomAccessIterator current = next - 1;
+            RandomAccessIterator current = first;
+            RandomAccessIterator next = detail::next(first);
 
             while (true) {
-                // Beginning of the current range
+                // Beginning of the current sequence
                 RandomAccessIterator begin_range = current;
 
+                // If the last part of the collection to sort isn't
+                // big enough, consider that it is an unstable sequence
                 if (std::distance(next, last) <= unstable_limit) {
                     if (begin_unstable == last) {
                         begin_unstable = begin_range;
@@ -210,34 +217,9 @@ namespace vergesort
                 RandomAccessIterator current2 = current;
                 RandomAccessIterator next2 = next;
 
-                if (compare(*current, *next)) {
-                    // Found an increasing range, move iterators
-                    // to the limits of the range
-                    while (current != begin_range) {
-                        --current;
-                        --next;
-                        if (compare(*next, *current)) break;
-                    }
-                    if (compare(*next, *current)) ++current;
-
-                    while (next2 != last) {
-                        if (compare(*next2, *current2)) break;
-                        ++current2;
-                        ++next2;
-                    }
-
-                    // Remember the beginning of the unsorted range
-                    if (begin_unstable == last) begin_unstable = begin_range;
-
-                    // Check whether we found a big enough sorted sequence
-                    if (std::distance(current, next2) >= unstable_limit) {
-                        pdqsort(begin_unstable, current, compare);
-                        inplace_merge3(first, begin_unstable, current, next2, compare);
-                        begin_unstable = last;
-                    }
-                } else {
-                    // Found an decreasing range, move iterators
-                    // to the limits of the range
+                if (compare(*next, *current)) {
+                    // Found a decreasing sequence, move iterators
+                    // to the limits of the sequence
                     while (current != begin_range) {
                         --current;
                         --next;
@@ -245,36 +227,96 @@ namespace vergesort
                     }
                     if (compare(*current, *next)) ++current;
 
+                    ++current2;
+                    ++next2;
                     while (next2 != last) {
                         if (compare(*current2, *next2)) break;
                         ++current2;
                         ++next2;
                     }
 
-                    // Remember the beginning of the unsorted range
-                    if (begin_unstable == last) begin_unstable = begin_range;
+                    // Check whether we found a big enough sorted sequence
+                    if (std::distance(current, next2) >= unstable_limit) {
+                        std::reverse(current, next2);
+                        if (std::distance(begin_range, current) && begin_unstable == last) {
+                            begin_unstable = begin_range;
+                        }
+                        if (begin_unstable != last) {
+                            pdqsort(begin_unstable, current, compare);
+                            runs.push_back(current);
+                            begin_unstable = last;
+                        }
+                        runs.push_back(next2);
+                    } else {
+                        // Remember the beginning of the unsorted sequence
+                        if (begin_unstable == last) {
+                            begin_unstable = begin_range;
+                        }
+                    }
+                } else {
+                    // Found an increasing sequence, move iterators
+                    // to the limits of the sequence
+                    while (current != begin_range) {
+                        --current;
+                        --next;
+                        if (compare(*next, *current)) break;
+                    }
+                    if (compare(*next, *current)) ++current;
+
+                    ++current2;
+                    ++next2;
+                    while (next2 != last) {
+                        if (compare(*next2, *current2)) break;
+                        ++current2;
+                        ++next2;
+                    }
 
                     // Check whether we found a big enough sorted sequence
                     if (std::distance(current, next2) >= unstable_limit) {
-                        pdqsort(begin_unstable, current, compare);
-                        std::reverse(current, next2);
-                        inplace_merge3(first, begin_unstable, current, next2, compare);
-                        begin_unstable = last;
+                        if (std::distance(begin_range, current) && begin_unstable == last) {
+                            begin_unstable = begin_range;
+                        }
+                        if (begin_unstable != last) {
+                            pdqsort(begin_unstable, current, compare);
+                            runs.push_back(current);
+                            begin_unstable = last;
+                        }
+                        runs.push_back(next2);
+                    } else {
+                        // Remember the beginning of the unsorted sequence
+                        if (begin_unstable == last) {
+                            begin_unstable = begin_range;
+                        }
                     }
                 }
 
                 if (next2 == last) break;
 
-                current = current2 + 1;
-                next = next2 + 1;
+                current = detail::next(current2);
+                next = detail::next(next2);
             }
 
             if (begin_unstable != last) {
-                // If there are unsorted elements left,
-                // sort them and merge everything
+                // If there are unsorted elements left, sort them
+                runs.push_back(last);
                 pdqsort(begin_unstable, last, compare);
-                std::inplace_merge(first, begin_unstable, last, compare);
             }
+
+            if (runs.size() < 2) return;
+
+            // Merge runs pairwise until there aren't runs left
+            do {
+                RandomAccessIterator begin = first;
+                for (typename std::list<RandomAccessIterator>::iterator it = runs.begin() ;
+                     it != runs.end() && it != detail::prev(runs.end()) ;
+                     ++it) {
+                    std::inplace_merge(begin, *it, *detail::next(it), compare);
+
+                    // Remove the middle iterator and advance
+                    it = runs.erase(it);
+                    begin = *it;
+                }
+            } while (runs.size() > 1);
         }
     }
 
