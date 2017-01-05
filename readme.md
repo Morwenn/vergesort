@@ -33,17 +33,17 @@ A comparison of `std::sort`, `std::stable_sort`, heapsort (`std::make_heap` + `s
 pdqsort and vergesort with various input distributions for random-access iterators, when sorting
 a collection of one million `int` values:
 
-![Random-access sorts](http://i.imgur.com/sDzdCAX.png)
+![Random-access sorts](https://i.imgur.com/Qgsga47.png)
 
 Note that the "sawtooth" distributions are biased: they highlight the few cases where vergesort is
 designed to fully take advantage of long sorted or reverse-sorted runs to beat the other sorting
 algorithms. These cases correspond to series of ascending (first one) and descending (second one)
-runs whose size is a bit bigger than n / log2 n, where n is the size of the collection to sort.
+runs whose size is a bit bigger than n / log n, where n is the size of the collection to sort.
 
-The following benchmark compares a list-specific `std::list::sort`, median-of-9 quicksort, a
-regular mergesort, and vergesort with various input distributions for bidirectional iterators:
+The following benchmark compares `std::list::sort`, a median-of-9 quicksort, a regular mergesort,
+and vergesort with various input distributions for bidirectional iterators:
 
-![Bidirectional sorts](https://i.imgur.com/J3XYJtw.png)
+![Bidirectional sorts](https://i.imgur.com/hDTScAb.png)
 
 These benchmarks have been compiled with MinGW g++ 6.1.0 `-std=c++1z -O2 -march=native`.
 
@@ -94,7 +94,7 @@ Once vergesort has crossed the entire collection, there should only be fairly bi
 At this point, vergesort then uses a k-way merge to merge all the runs and leave a fully sorted
 collection.
 
-A run is considered *big enough* when its size is bigger than n / log2 n, where n is the size of
+A run is considered *big enough* when its size is bigger than n / log n, where n is the size of
 the entire collection to sort. This heuristic is sometimes suboptimal since tests have proven that
 it would be better not to fall back to the pattern-defeating quicksort in some cases, but I was
 unable to find a better general-purpose heuristic, so this one will do for the time being.
@@ -103,10 +103,10 @@ unable to find a better general-purpose heuristic, so this one will do for the t
 
 Vergesort has one main optimization which allows to scan the collection for *big enough* runs and
 to fail fast enough that it is almost unnticeable in the benchmarks: instead of going through the
-collection element by element, vergesort jumps n / log2 n elements at a time, and expands iterators
+collection element by element, vergesort jumps n / log n elements at a time, and expands iterators
 to the left and to the right to check whether it is in a *big enough* run. In some cases, it allows
 to detect that we are not in a *big enough* run without having to check every element and to fall
-back to the pattern-defeating quicksort with barely more than log2 n comparisons. This optimization
+back to the pattern-defeating quicksort with barely more than log n comparisons. This optimization
 requires jumps through the table and thus does not exist for the bidirectional version.
 
 The k-way merge at the end of the algorithm is fairly poor and unoptimized, but the optimization
