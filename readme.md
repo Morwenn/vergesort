@@ -4,12 +4,12 @@ vergesort
 Vergesort is a new sorting algorithm which combines merge operations on almost sorted data, and
 falls back to another sorting algorithm ([pattern-defeating quicksort][1] here, but it could be
 anything) when the data is not sorted enough. It achieves linear time on some patterns, generally
-for almost sorted data, and should never perform worse than O(n log² n). This last statement has
+for almost sorted data, and should never perform worse than O(n log n). This last statement has
 not been formally proven, but there is an intuitive logic explained in the description of the
 algorithm which makes this complexity seem honest.
 
     Best        Average     Worst       Memory      Stable
-    n           n log n     n log² n    n           No
+    n           n log n     n log n     n           No
 
 While vergesort has been designed to work with random-access iterators, this repository also
 contains an experimental version which works with bidirectional iterators. The algorithm is
@@ -24,7 +24,7 @@ follows:
 It should be noted that the worst case should run in O(n²) since vergesort falls back to a
 median-of-9 quicksort. That said, the quicksort tends to have a worst case complexity for some
 specific patterns, and the vergesort layer might be efficient against these patterns. That said,
-the time complexity could be lowered to O(n log² n) by replacing the quicksort by a mergesort.
+the time complexity could be lowered to O(n log n) by replacing the quicksort by a mergesort.
 Quicksort was chosen for consistency because it's in the family of pattern-defeating quicksort.
 
 ### Benchmarks
@@ -119,30 +119,55 @@ Because the bidirectional version of the algorithm is pretty slow and doesn't ev
 main optimization of the algorithm, we will only analyze the random-access version of the algorithm
 here.
 
-Now I'm specifically good when its comes from complexity, but it seems pretty logical to estimate
-that the complexity of vergesort is O(p + q + r), where p, q and r correspond to the following:
-* p is the complexity of the step where we "run through" the collection: intuitively we've got
-  O(p) = O(n) and Ω(p) = Ω(log n)
-* q is the complexity of sorting unsorted subsequences in the collection. In the best case, the
-  whole collection is already sorted and there's no cost. I guess that the worst case is when
-  there are reverse-sorted run of size n / log2 n interleaved with unsorted sub-sequences of size
-  n / log2 n too. In this case, the complexity will be dominated by the sorting operations, which
-  will then be O(q) = O(log n * (n / log n) * log (n / log n)), which can be simplified to O(q) =
-  O(n log (n / log n)). This complexity looks smaller than O(n log n), which is the lower bound
-  for a comparison sort. That means that in this case, O(p+q+r) is actually dominated by O(r).
-* r is the complexity of the k-way merge step. I couldn't find the overall complexity, but I
-  expect it to be O(n log² n) when there isn't extra memory available because of the repeated calls
-  to `std::inplace_merge`. Maybe you can [help with the complexity][2] :)
+The complexity of vergesort for a given collection changes depending on the extra memory available,
+and corresponds to the dominating complexity of the algorithm's three main steps:
+* The step where vergesort "runs through" the collection to detect runs
+* The step where we sort sub-sequences of the collection that are not sorted enough
+* The final step where we merge the detected runs
 
-Basically, it would make a O(n log n) algorithm when enough memory is available, and an O(n log² n)
-algorithm otherwise, just like `std::stable_sort`. That said, the algorithm needs up to O(log n)
-memory to keep track of the runs, so it would probably crash sooner anyway if extra memory wasn't
-available. I'm not sure what to say about its complexity now...
+*In the following analysis, *n* is the size of the collection to sort.*
 
-The space complexity is dominated by the k-way merge step that eats up n/2 memory, making it use
-O(n/2 + log n) = O(n) extra memory in the worst case.
+The first step is intuitively comprised between Ω(log n) and O(n), so it can't dominate the
+complexity of vergesort.
+
+The worst case of the second step is probably when there are ascending or descending runs of size
+slightly bigger than n / log n interleaved with unsorted sub-sequences of size slightly smaller
+than n / log n (we consider both to be n / log n for the analysis). In this case, the complexity
+of the step will be dominated by the sorting operations. Since there are (log n) / 2 sub-sequences
+to sort, the complexity will be O(log n * (n / log n) * log (n / log n)), which can be simplified
+to O(n log (n / log n)), which is equivalent to O(n log n).
+
+The complexity of the third step is that of a k-way merge, with log n sub-sequences whose size is
+n / log n. Since the algorithm merges sub-sequences pairwise, it first applies (log n) / 2 times
+a merge operation on sub-sequences of 2n / log n elements, then (log n) / 4 times a merge on
+sub-sequences of 4n / log n elements, etc... In the end, since the number of merges is divided by
+2 at each step until everything is merged, hence it performs log k such steps, where k is the
+number of sub-sequences to merge, hence it performs log log n such steps.
+
+Now the actual complexity of that third step depends on the complexity of the merge operations. We
+use [`std::inplace_merge`][4], which performs between O(N) and O(N log N) comparisons depending on
+the available memory. For the sake of it, we will analyze the case where it has all the memory it
+wants for the merge operations, then the case where it has no extra memory available for the same
+operations. The worst case for this is when there are log n sub-sequences of size n / log n to
+merge.
+
+We have previously shown that the first pass of merging operations applies (log n) / 2 times a
+merge operation on sub-sequences of 2n / log n elements, which means that the complexity of that
+first pass when memory is available is O((log n)/2 * 2n/log n) = O(n). The complexity of the
+second pass is O((log n)/4 * 4n/log n) = O(n), etc... every pass is O(n) and we have already
+shown that there are log log n such passes, so the overall complexity of that merging step when
+extra memory is available is O(n log log n). The complexity of the merging step was no extra memory
+is available was a bit complicated for me to compute, so you can find a Q&A [here][2] which comes
+to the conclusion that the complexity of the step is O(n log n log log n).
+
+In the end, when extra memory is available, the complexity of vergesort is dominated by the
+O(n log n) complexity of the second, while it is dominated by the O(n log n log log n) complexity
+of the third step when no extra memory is available. At the end of the day, the cute log log n
+factor of the third step can most likely be ignored for any real-world case, and we brand vergesort
+as an O(n log n) sorting algorithm.
 
 
   [1]: https://github.com/orlp/pdqsort
   [2]: http://cs.stackexchange.com/q/68271/29312
   [3]: https://github.com/Morwenn/cpp-sort
+  [4]: http://en.cppreference.com/w/cpp/algorithm/inplace_merge
