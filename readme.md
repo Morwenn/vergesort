@@ -47,6 +47,11 @@ and vergesort with various input distributions for bidirectional iterators:
 
 These benchmarks have been compiled with MinGW g++ 6.1.0 `-std=c++1z -O2 -march=native`.
 
+You can also find [more benchmarks](https://github.com/Morwenn/vergesort/blob/master/fallbacks.md)
+with additional information, where I compared several sorting algorithms against vergesort when
+using them as fallback algorithms. These benchmarks are more interesting to see what vergesort has
+been designed to achieve.
+
 ### Structure of the project
 
 The project exposes one function: `vergesort::vergesort`, which takes either two iterators, or two
