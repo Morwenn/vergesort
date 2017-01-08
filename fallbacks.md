@@ -5,7 +5,7 @@ top of another sorting algorithm to take advantage of already sorted or reverse-
 the collection to sort. Therefore, instead of comparing the pdqsort-backed version of the algorithm
 to other sorting algorithms (as in the README), it's actually more interesting to compare how a
 sorting algorithms behaves with and without the vergesort optimization layer. To show off, we will
-compare it to several of the fastest or most reknowned sorting algorithms, and see how it behaves
+compare it to several of the fastest or most renowned sorting algorithms, and see how it behaves
 when trying to sort data with several different patterns.
 
 ### The patterns
