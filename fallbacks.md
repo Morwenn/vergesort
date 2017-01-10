@@ -144,12 +144,12 @@ makes it hard to construct such a pattern, considering it's even possible.
 
 *This benchmark uses ska_sort as implemented by Malte Skarupke in [skarupke/ska_sort](https://github.com/skarupke/ska_sort).*
 
-![ska_sort vs. vergesort](https://i.imgur.com/f6ldlOR.png)
+![ska_sort vs. vergesort](https://i.imgur.com/ydWn0BL.png)
 
 As with almost every other sorting algorithm, vergesort beats raw ska_sort for most patterns it has
 been designed to handle, which is pretty interesting considering that ska_sort is less adaptative
 than other sorting algorithms, despite its excellent performance for almost everything. That said,
-the *vergesort killer* pattern has a surprisingly high cost (slightly above 200 in the image
+the *vergesort killer* pattern has a quite high cost (139, vs. 127 for raw ska_sort in the image
 above), which might hypothetically constitute an untimely bottleneck in some applications.
 
 ### Conclusions
