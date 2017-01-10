@@ -89,7 +89,7 @@ sorting algorithms.
 
 Basically, vergesort runs through the collection while it is sorted in ascending or descending
 order, and computes the size of the current run. If the run is *big enough*, then vergesort
-rememberq the bounds of the run, to merge it in another step (it reverses the run first if it
+remembers the bounds of the run, to merge it in another step (it reverses the run first if it
 is sorted in descending order). If the run is not *big enough*, vergesort just remembers its
 beginning and moves on to the next run. When it reaches a *big enough* run, it calls the fallback
 sorting algorithm to sort every element between the beginning of the section without *big enough*
