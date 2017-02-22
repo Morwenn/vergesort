@@ -2,7 +2,7 @@
     pdqsort.h - Pattern-defeating quicksort.
 
     Copyright (c) 2015 Orson Peters
-    Modified by Morwenn in 2015-2016 to use in vergesort
+    Modified by Morwenn in 2015-2017 to use in vergesort
 
     This software is provided 'as-is', without any express or implied warranty. In no event will the
     authors be held liable for any damages arising from the use of this software.
@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <iterator>
 #include <utility>
 #include "insertion_sort.h"
 #include "iter_sort3.h"
@@ -33,6 +34,7 @@
 
 #if __cplusplus >= 201103L
     #include <cstdint>
+    #include <type_traits>
 #endif
 
 namespace vergesort
@@ -58,10 +60,28 @@ namespace detail
         cacheline_size = 64
     };
 
+#if __cplusplus >= 201103L
+    template<typename T>
+    struct is_default_compare:
+        std::false_type
+    {};
+
+    template<typename T>
+    struct is_default_compare<std::less<T>>:
+        std::true_type
+    {};
+
+    template<typename T>
+    struct is_default_compare<std::greater<T>>:
+        std::true_type
+    {};
+#endif
+
     // Sorts [begin, end) using insertion sort with the given comparison function. Assumes
     // *(begin - 1) is an element smaller than or equal to any element in [begin, end).
     template<typename Iter, typename Compare>
-    void unguarded_insertion_sort(Iter begin, Iter end, Compare comp) {
+    void unguarded_insertion_sort(Iter begin, Iter end, Compare comp)
+    {
         typedef typename std::iterator_traits<Iter>::value_type T;
         if (begin == end) return;
 
@@ -85,7 +105,8 @@ namespace detail
     // partial_insertion_sort_limit elements were moved, and abort sorting. Otherwise it will
     // successfully sort and return true.
     template<typename Iter, typename Compare>
-    inline bool partial_insertion_sort(Iter begin, Iter end, Compare comp) {
+    inline bool partial_insertion_sort(Iter begin, Iter end, Compare comp)
+    {
         typedef typename std::iterator_traits<Iter>::value_type T;
         if (begin == end) return true;
 
@@ -112,7 +133,8 @@ namespace detail
     }
 
     template<typename T>
-    T* align_cacheline(T* p) {
+    T* align_cacheline(T* p)
+    {
 #ifdef UINTPTR_MAX
         std::uintptr_t ip = reinterpret_cast<std::uintptr_t>(p);
 #else
@@ -125,7 +147,8 @@ namespace detail
     template<typename RandomAccessIterator>
     void swap_offsets(RandomAccessIterator first, RandomAccessIterator last,
                       unsigned char* offsets_l, unsigned char* offsets_r,
-                      int num, bool use_swaps) {
+                      int num, bool use_swaps)
+    {
         typedef typename std::iterator_traits<RandomAccessIterator>::value_type T;
         if (use_swaps) {
             // This case is needed for the descending distribution, where we need
@@ -136,7 +159,8 @@ namespace detail
         } else if (num > 0) {
             RandomAccessIterator l = first + offsets_l[0];
             RandomAccessIterator r = last - offsets_r[0];
-            T tmp(VERGESORT_PREFER_MOVE(*l)); *l = VERGESORT_PREFER_MOVE(*r);
+            T tmp(VERGESORT_PREFER_MOVE(*l));
+            *l = VERGESORT_PREFER_MOVE(*r);
             for (int i = 1; i < num; ++i) {
                 l = first + offsets_l[i]; *r = VERGESORT_PREFER_MOVE(*l);
                 r = last - offsets_r[i]; *l = VERGESORT_PREFER_MOVE(*r);
@@ -149,11 +173,11 @@ namespace detail
     // to the pivot are put in the right-hand partition. Returns the position of the pivot after
     // partitioning and whether the passed sequence already was correctly partitioned. Assumes the
     // pivot is a median of at least 3 elements and that [begin, end) is at least
-    // insertion_sort_threshold long.
+    // insertion_sort_threshold long. Uses branchless partitioning.
     template<typename RandomAccessIterator, typename Compare>
     std::pair<RandomAccessIterator, bool>
-    partition_right(RandomAccessIterator begin, RandomAccessIterator end,
-                    Compare comp)
+    partition_right_branchless(RandomAccessIterator begin, RandomAccessIterator end,
+                               Compare comp)
     {
         typedef typename std::iterator_traits<RandomAccessIterator>::value_type T;
 
@@ -287,6 +311,53 @@ namespace detail
         return std::make_pair(pivot_pos, already_partitioned);
     }
 
+    // Partitions [begin, end) around pivot *begin using comparison function comp. Elements equal
+    // to the pivot are put in the right-hand partition. Returns the position of the pivot after
+    // partitioning and whether the passed sequence already was correctly partitioned. Assumes the
+    // pivot is a median of at least 3 elements and that [begin, end) is at least
+    // insertion_sort_threshold long.
+    template<class RandomAccessIterator, class Compare>
+    std::pair<RandomAccessIterator, bool>
+    partition_right(RandomAccessIterator begin, RandomAccessIterator end, Compare comp)
+    {
+        typedef typename std::iterator_traits<RandomAccessIterator>::value_type T;
+
+        // Move pivot into local for speed.
+        T pivot(VERGESORT_PREFER_MOVE(*begin));
+
+        RandomAccessIterator first = begin;
+        RandomAccessIterator last = end;
+
+        // Find the first element greater than or equal than the pivot (the median of 3 guarantees
+        // this exists).
+        while (comp(*++first, pivot));
+
+        // Find the first element strictly smaller than the pivot. We have to guard this search if
+        // there was no element before *first.
+        if (first - 1 == begin) while (first < last && !comp(*--last, pivot));
+        else                    while (                !comp(*--last, pivot));
+
+        // If the first pair of elements that should be swapped to partition are the same element,
+        // the passed in sequence already was correctly partitioned.
+        bool already_partitioned = first >= last;
+
+        // Keep swapping pairs of elements that are on the wrong side of the pivot. Previously
+        // swapped pairs guard the searches, which is why the first iteration is special-cased
+        // above.
+        while (first < last) {
+            std::iter_swap(first, last);
+            while (comp(*++first, pivot));
+            while (!comp(*--last, pivot));
+        }
+
+        // Put the pivot in the right place.
+        RandomAccessIterator pivot_pos = first - 1;
+        *begin = VERGESORT_PREFER_MOVE(*pivot_pos);
+        *pivot_pos = VERGESORT_PREFER_MOVE(pivot);
+
+        return std::make_pair(pivot_pos, already_partitioned);
+    }
+
     // Similar function to the one above, except elements equal to the pivot are put to the left of
     // the pivot and it doesn't check or return if the passed sequence already was partitioned.
     // Since this is rarely used (the many equal case), and in that case pdqsort already has O(n)
@@ -320,7 +391,7 @@ namespace detail
         return pivot_pos;
     }
 
-    template<typename RandomAccessIterator, typename Compare>
+    template<typename RandomAccessIterator, typename Compare, bool Branchless>
     void pdqsort_loop(RandomAccessIterator begin, RandomAccessIterator end,
                       Compare comp, int bad_allowed, bool leftmost = true)
     {
@@ -360,7 +431,9 @@ namespace detail
             }
 
             // Partition and get results.
-            std::pair<RandomAccessIterator, bool> part_result = partition_right(begin, end, comp);
+            std::pair<RandomAccessIterator, bool> part_result;
+            if (Branchless) part_result = partition_right_branchless(begin, end, comp);
+            else            part_result = partition_right(begin, end, comp);
             RandomAccessIterator pivot_pos = part_result.first;
             bool already_partitioned = part_result.second;
 
@@ -410,16 +483,27 @@ namespace detail
 
             // Sort the left partition first using recursion and do tail recursion elimination for
             // the right-hand partition.
-            pdqsort_loop(begin, pivot_pos, comp, bad_allowed, leftmost);
+            pdqsort_loop<RandomAccessIterator, Compare, Branchless>(
+                begin, pivot_pos, comp, bad_allowed, leftmost);
             begin = pivot_pos + 1;
             leftmost = false;
         }
     }
 
     template<typename RandomAccessIterator, typename Compare>
-    void pdqsort(RandomAccessIterator begin, RandomAccessIterator end, Compare comp) {
+    void pdqsort(RandomAccessIterator begin, RandomAccessIterator end, Compare comp)
+    {
         if (begin == end) return;
-        pdqsort_loop(begin, end, comp, log2(end - begin));
+
+#if __cplusplus >= 201103L
+        pdqsort_loop<RandomAccessIterator, Compare,
+            is_default_compare<typename std::decay<Compare>::type>::value &&
+            std::is_arithmetic<typename std::iterator_traits<RandomAccessIterator>::value_type>::value>(
+            begin, end, comp, log2(end - begin));
+#else
+        pdqsort_loop<RandomAccessIterator, Compare, false>(
+            begin, end, comp, log2(end - begin));
+#endif
     }
 }}
 
