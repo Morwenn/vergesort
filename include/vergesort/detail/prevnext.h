@@ -34,8 +34,15 @@ namespace detail
 {
     template<typename BidirectionalIterator>
     BidirectionalIterator
+    prev(BidirectionalIterator it)
+    {
+        return --it;
+    }
+
+    template<typename BidirectionalIterator>
+    BidirectionalIterator
     prev(BidirectionalIterator it,
-         typename std::iterator_traits<BidirectionalIterator>::difference_type n=1)
+         typename std::iterator_traits<BidirectionalIterator>::difference_type n)
     {
         std::advance(it, -n);
         return it;
@@ -43,8 +50,15 @@ namespace detail
 
     template<typename ForwardIterator>
     ForwardIterator
+    next(ForwardIterator it)
+    {
+        return ++it;
+    }
+
+    template<typename ForwardIterator>
+    ForwardIterator
     next(ForwardIterator it,
-         typename std::iterator_traits<ForwardIterator>::difference_type n=1)
+         typename std::iterator_traits<ForwardIterator>::difference_type n)
     {
         std::advance(it, n);
         return it;
