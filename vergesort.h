@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2015-2017 Morwenn <morwenn29@hotmail.fr>
+ * Copyright (c) 2015-2020 Morwenn <morwenn29@hotmail.fr>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -761,6 +761,7 @@ namespace detail
 
         // Pair of iterators to iterate through the collection
         BidirectionalIterator next = detail::is_sorted_until(first, last, compare);
+        if (next == last) return;
         BidirectionalIterator current = next;
         --current;
 
