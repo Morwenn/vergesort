@@ -844,7 +844,7 @@ namespace detail
         typedef typename std::iterator_traits<RandomAccessIterator>::difference_type difference_type;
         difference_type dist = std::distance(first, last);
 
-        if (dist < 80) {
+        if (dist < 128) {
             // Vergesort is inefficient for small collections
             pdqsort(first, last, compare);
             return;
