@@ -221,11 +221,11 @@ namespace vergesort
                 if (compare(*next, *current)) {
                     // Found a decreasing sequence, move iterators
                     // to the limits of the sequence
-                    while (current != begin_range) {
+                    do {
                         --current;
                         --next;
                         if (compare(*current, *next)) break;
-                    }
+                    } while (current != begin_range);
                     if (compare(*current, *next)) ++current;
 
                     ++current2;
@@ -257,11 +257,11 @@ namespace vergesort
                 } else {
                     // Found an increasing sequence, move iterators
                     // to the limits of the sequence
-                    while (current != begin_range) {
+                    do {
                         --current;
                         --next;
                         if (compare(*next, *current)) break;
-                    }
+                    } while (current != begin_range);
                     if (compare(*next, *current)) ++current;
 
                     ++current2;
