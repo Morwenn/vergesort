@@ -757,7 +757,7 @@ namespace detail
         BidirectionalIterator begin_unstable = last;
 
         // Size of the unstable partition
-        std::size_t size_unstable = 0;
+        difference_type size_unstable = 0;
 
         // Pair of iterators to iterate through the collection
         BidirectionalIterator next = detail::is_sorted_until(first, last, compare);
