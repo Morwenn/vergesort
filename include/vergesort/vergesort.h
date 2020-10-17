@@ -173,7 +173,7 @@ namespace vergesort
                        Compare compare, std::random_access_iterator_tag)
         {
             typedef typename std::iterator_traits<RandomAccessIterator>::difference_type difference_type;
-            difference_type dist = std::distance(first, last);
+            difference_type dist = last - first;
 
             if (dist < 128) {
                 // Vergesort is inefficient for small collections
@@ -203,7 +203,7 @@ namespace vergesort
 
                 // If the last part of the collection to sort isn't
                 // big enough, consider that it is an unstable sequence
-                if (std::distance(next, last) <= unstable_limit) {
+                if ((last - next) <= unstable_limit) {
                     if (begin_unstable == last) {
                         begin_unstable = begin_range;
                     }
@@ -211,8 +211,8 @@ namespace vergesort
                 }
 
                 // Set backward iterators
-                std::advance(current, unstable_limit);
-                std::advance(next, unstable_limit);
+                current += unstable_limit;
+                next += unstable_limit;
 
                 // Set forward iterators
                 RandomAccessIterator current2 = current;
@@ -237,9 +237,9 @@ namespace vergesort
                     }
 
                     // Check whether we found a big enough sorted sequence
-                    if (std::distance(current, next2) >= unstable_limit) {
+                    if ((next2 - current) >= unstable_limit) {
                         std::reverse(current, next2);
-                        if (std::distance(begin_range, current) && begin_unstable == last) {
+                        if ((current - begin_range) && begin_unstable == last) {
                             begin_unstable = begin_range;
                         }
                         if (begin_unstable != last) {
@@ -273,8 +273,8 @@ namespace vergesort
                     }
 
                     // Check whether we found a big enough sorted sequence
-                    if (std::distance(current, next2) >= unstable_limit) {
-                        if (std::distance(begin_range, current) && begin_unstable == last) {
+                    if ((next2 - current) >= unstable_limit) {
+                        if ((current - begin_range) && begin_unstable == last) {
                             begin_unstable = begin_range;
                         }
                         if (begin_unstable != last) {
