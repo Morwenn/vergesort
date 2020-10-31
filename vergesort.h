@@ -847,7 +847,7 @@ namespace detail
     }
 
     template<typename RandomAccessIterator, typename Compare>
-    void not_vergesort(RandomAccessIterator first, RandomAccessIterator last,
+    void vergesort(RandomAccessIterator first, RandomAccessIterator last,
                    Compare compare, std::random_access_iterator_tag)
     {
         typedef typename std::iterator_traits<RandomAccessIterator>::difference_type difference_type;
