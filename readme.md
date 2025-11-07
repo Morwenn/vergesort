@@ -1,7 +1,7 @@
 vergesort
 ---------
 
-Vergesort is a new sorting algorithm which combines merge operations on almost sorted data, and
+Vergesort is a sorting algorithm which combines merge operations on almost sorted data, and
 falls back to another sorting algorithm ([pattern-defeating quicksort][1] here, but it could be
 anything) when the data is not sorted enough. It achieves linear time on some patterns, generally
 for almost sorted data, and should never perform worse than O(n log n). This last statement has
@@ -21,11 +21,11 @@ follows:
     Best        Average     Worst       Memory      Stable
     n           n log n     n²          n           No
 
-It should be noted that the worst case should run in O(n²) since vergesort falls back to a
+It is worth noting that the worst case should run in O(n²) since vergesort falls back to a
 median-of-9 quicksort. That said, the quicksort tends to have a worst case complexity for some
-specific patterns, and the vergesort layer might be efficient against these patterns. That said,
-the time complexity could be lowered to O(n log n) by replacing the quicksort by a mergesort.
-Quicksort was chosen for consistency because it's in the family of pattern-defeating quicksort.
+specific patterns, and the vergesort layer might be efficient against these patterns. The time
+complexity could be lowered to O(n log n) by replacing the quicksort by a mergesort. Quicksort
+was chosen for consistency because it's in the family of pattern-defeating quicksort.
 
 ### Benchmarks
 
@@ -48,9 +48,9 @@ and vergesort with various input distributions for bidirectional iterators:
 These benchmarks have been compiled with MinGW g++ 6.1.0 `-std=c++1z -O2 -march=native`.
 
 You can also find [more benchmarks](https://github.com/Morwenn/vergesort/blob/master/fallbacks.md)
-with additional information, where I compared several sorting algorithms against vergesort when
-using them as fallback algorithms. These benchmarks are more interesting to see what vergesort has
-been designed to achieve.
+with additional information, where I compare several sorting algorithms against vergesort when
+using them as fallback algorithms. These benchmarks are more interesting to understand what vergesort
+has been designed to achieve.
 
 ### Structure of the project
 
@@ -77,15 +77,15 @@ with several other interesting sorting algorithms.
 
 ### The algorithm
 
-*In the following sequence, we will call "run" a sorted (in ascending or descending order)
-sub-sequence of the collection to sort. It can be as short as two elements.*
+*In the following sequence, we call "run" a sorted subsequence of adjacent elements of the collection
+to sort (in either ascending or descending order). It can be as short as two elements.*
 
 Vergesort is based on a very simple principle: it tries to find big runs in the collection to
 sort to take advantage of the presortedness, and falls back to another sorting algorithm to handle
 the sections of the collection to sort without *big enough* runs. Its best feature is its ability
 to give up *really* fast in most scenarios and to fallback to another algorithm without a
-noticeable overhead. More than a sorting algorithm, it's a thin layer to add on top of other
-sorting algorithms.
+noticeable overhead. More than a sorting algorithm proper, it is more of a thin layer to add on top
+of another sorting algorithm.
 
 Basically, vergesort runs through the collection while it is sorted in ascending or descending
 order, and computes the size of the current run. If the run is *big enough*, then vergesort
@@ -112,16 +112,20 @@ collection element by element, vergesort jumps n / log n elements at a time, and
 to the left and to the right to check whether it is in a *big enough* run. In some cases, it allows
 to detect that we are not in a *big enough* run without having to check every element and to fall
 back to the pattern-defeating quicksort with barely more than log n comparisons. This optimization
-requires jumps through the table and thus does not exist for the bidirectional version.
+requires jumps through the collection to sort and thus does not exist for the bidirectional version.
 
 The k-way merge at the end of the algorithm is fairly poor and unoptimized, but the optimization
 described above is sufficient to make vergesort a valuable tool to augment sorting algorithms that
 are fast on average, but not so good at taking advantage of presortedness.
 
+Similarly, the implementation proposed in this repository is quite dumb when it comes to reversed
+runs: it greedily reverses them before merging, while a smarter implementation could take analyze
+the directions of the runs before the merging, and avoid reversals.
+
 ### Complexity
 
 Because the bidirectional version of the algorithm is pretty slow and doesn't even benefit from the
-main optimization of the algorithm, we will only analyze the random-access version of the algorithm
+main chkun-hopping optimization, we will only analyze the random-access version of the algorithm
 here.
 
 The complexity of vergesort for a given collection changes depending on the extra memory available,
@@ -166,13 +170,24 @@ is available was a bit complicated for me to compute, so you can find a Q&A [her
 to the conclusion that the complexity of the step is O(n log n log log n).
 
 In the end, when extra memory is available, the complexity of vergesort is dominated by the
-O(n log n) complexity of the second, while it is dominated by the O(n log n log log n) complexity
+O(n log n) complexity of the second step, while it is dominated by the O(n log n log log n) complexity
 of the third step when no extra memory is available. At the end of the day, the cute log log n
 factor of the third step can most likely be ignored for any real-world case, and we brand vergesort
 as an O(n log n) sorting algorithm.
+
+### Stability
+
+The proposed implementation of vergesort is unstable, but it is fiarly easy to turn it into a stable
+algorithm by detecting strictly descending runs instead of non-ascending ones: with such a strategy,
+elements that compare equivalent are never part of a run reversal, and keep their relative position
+in the sorted collection. This is similar to what [timsort][5] does.
+
+Obviously, this also requires using a stable sort as a fallback instead of the pattern-defeating
+quicksort used by this implementation.
 
 
   [1]: https://github.com/orlp/pdqsort
   [2]: http://cs.stackexchange.com/q/68271/29312
   [3]: https://github.com/Morwenn/cpp-sort
   [4]: http://en.cppreference.com/w/cpp/algorithm/inplace_merge
+  [5]: https://en.wikipedia.org/wiki/Timsort
